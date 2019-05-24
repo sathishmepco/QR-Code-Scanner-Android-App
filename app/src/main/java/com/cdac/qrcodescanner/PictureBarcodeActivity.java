@@ -22,11 +22,9 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 
@@ -38,7 +36,7 @@ public class PictureBarcodeActivity extends AppCompatActivity implements View.On
     private Uri imageUri;
     private static final int REQUEST_CAMERA_PERMISSION = 200;
     private static final int CAMERA_REQUEST = 101;
-    private static final String TAG = "QRCODE_SCANNER";
+    private static final String TAG = "QR_CODE_SCANNER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,57 +124,8 @@ public class PictureBarcodeActivity extends AppCompatActivity implements View.On
                 if (detector.isOperational() && bitmap != null) {
                     imageView.setImageBitmap(bitmap);
                     Frame frame = new Frame.Builder().setBitmap(bitmap).build();
-                    SparseArray<Barcode> barcodes = detector.detect(frame);
-                    for (int index = 0; index < barcodes.size(); index++) {
-                        Barcode code = barcodes.valueAt(index);
-                        textViewResultBody.setText(textViewResultBody.getText() + "\n" + code.displayValue + "\n");
-                        copyToClipBoard(code.displayValue);
-                        int type = barcodes.valueAt(index).valueFormat;
-                        switch (type) {
-                            case Barcode.CONTACT_INFO:
-                                Log.i(TAG, code.contactInfo.title);
-                                break;
-                            case Barcode.EMAIL:
-                                Log.i(TAG, code.displayValue);
-                                break;
-                            case Barcode.ISBN:
-                                Log.i(TAG, code.rawValue);
-                                break;
-                            case Barcode.PHONE:
-                                Log.i(TAG, code.phone.number);
-                                break;
-                            case Barcode.PRODUCT:
-                                Log.i(TAG, code.rawValue);
-                                break;
-                            case Barcode.SMS:
-                                Log.i(TAG, code.sms.message);
-                                break;
-                            case Barcode.TEXT:
-                                Log.i(TAG, code.displayValue);
-                                break;
-                            case Barcode.URL:
-                                Log.i(TAG, "url: " + code.displayValue);
-                                break;
-                            case Barcode.WIFI:
-                                Log.i(TAG, code.wifi.ssid);
-                                break;
-                            case Barcode.GEO:
-                                Log.i(TAG, code.geoPoint.lat + ":" + code.geoPoint.lng);
-                                break;
-                            case Barcode.CALENDAR_EVENT:
-                                Log.i(TAG, code.calendarEvent.description);
-                                break;
-                            case Barcode.DRIVER_LICENSE:
-                                Log.i(TAG, code.driverLicense.licenseNumber);
-                                break;
-                            default:
-                                Log.i(TAG, code.rawValue);
-                                break;
-                        }
-                    }
-                    if (barcodes.size() == 0) {
-                        textViewResultBody.setText("No barcode could be detected. Please try again.");
-                    }
+                    SparseArray<Barcode> barCodes = detector.detect(frame);
+                    setBarCode(barCodes);
                 } else {
                     textViewResultBody.setText("Detector initialisation failed");
                 }
@@ -184,6 +133,60 @@ public class PictureBarcodeActivity extends AppCompatActivity implements View.On
                 Toast.makeText(getApplicationContext(), "Failed to load Image", Toast.LENGTH_SHORT)
                         .show();
                 Log.e(TAG, e.toString());
+            }
+        }
+    }
+
+    private void setBarCode(SparseArray<Barcode> barCodes){
+        if (barCodes.size() == 0) {
+            textViewResultBody.setText("No barcode could be detected. Please try again.");
+            return;
+        }
+        for (int index = 0; index < barCodes.size(); index++) {
+            Barcode code = barCodes.valueAt(index);
+            textViewResultBody.setText(textViewResultBody.getText() + "\n" + code.displayValue + "\n");
+            copyToClipBoard(code.displayValue);
+            int type = barCodes.valueAt(index).valueFormat;
+            switch (type) {
+                case Barcode.CONTACT_INFO:
+                    Log.i(TAG, code.contactInfo.title);
+                    break;
+                case Barcode.EMAIL:
+                    Log.i(TAG, code.displayValue);
+                    break;
+                case Barcode.ISBN:
+                    Log.i(TAG, code.rawValue);
+                    break;
+                case Barcode.PHONE:
+                    Log.i(TAG, code.phone.number);
+                    break;
+                case Barcode.PRODUCT:
+                    Log.i(TAG, code.rawValue);
+                    break;
+                case Barcode.SMS:
+                    Log.i(TAG, code.sms.message);
+                    break;
+                case Barcode.TEXT:
+                    Log.i(TAG, code.displayValue);
+                    break;
+                case Barcode.URL:
+                    Log.i(TAG, "url: " + code.displayValue);
+                    break;
+                case Barcode.WIFI:
+                    Log.i(TAG, code.wifi.ssid);
+                    break;
+                case Barcode.GEO:
+                    Log.i(TAG, code.geoPoint.lat + ":" + code.geoPoint.lng);
+                    break;
+                case Barcode.CALENDAR_EVENT:
+                    Log.i(TAG, code.calendarEvent.description);
+                    break;
+                case Barcode.DRIVER_LICENSE:
+                    Log.i(TAG, code.driverLicense.licenseNumber);
+                    break;
+                default:
+                    Log.i(TAG, code.rawValue);
+                    break;
             }
         }
     }

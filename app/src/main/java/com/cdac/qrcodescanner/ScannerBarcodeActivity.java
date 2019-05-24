@@ -5,6 +5,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -29,7 +30,6 @@ public class ScannerBarcodeActivity extends AppCompatActivity {
     private CameraSource cameraSource;
     private static final int REQUEST_CAMERA_PERMISSION = 201;
     String intentData = "";
-    boolean isEmail = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,16 +57,7 @@ public class ScannerBarcodeActivity extends AppCompatActivity {
         surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
-                try {
-                    if (ActivityCompat.checkSelfPermission(ScannerBarcodeActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                        cameraSource.start(surfaceView.getHolder());
-                    } else {
-                        ActivityCompat.requestPermissions(ScannerBarcodeActivity.this, new
-                                String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                openCamera();
             }
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
@@ -87,25 +78,32 @@ public class ScannerBarcodeActivity extends AppCompatActivity {
             public void receiveDetections(Detector.Detections<Barcode> detections) {
                 final SparseArray<Barcode> barCode = detections.getDetectedItems();
                 if (barCode.size() > 0) {
-                    textViewBarCodeValue.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (barCode.valueAt(0).email != null) {
-                                textViewBarCodeValue.removeCallbacks(null);
-                                intentData = barCode.valueAt(0).email.address;
-                                textViewBarCodeValue.setText(intentData);
-                                copyToClipBoard(intentData);
-                                isEmail = true;
-                            } else {
-                                isEmail = false;
-                                intentData = barCode.valueAt(0).displayValue;
-                                textViewBarCodeValue.setText(intentData);
-                                copyToClipBoard(intentData);
-                            }
-                        }
-                    });
-
+                    setBarCode(barCode);
                 }
+            }
+        });
+    }
+
+    private void openCamera(){
+        try {
+            if (ActivityCompat.checkSelfPermission(ScannerBarcodeActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                cameraSource.start(surfaceView.getHolder());
+            } else {
+                ActivityCompat.requestPermissions(ScannerBarcodeActivity.this, new
+                        String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void setBarCode(final SparseArray<Barcode> barCode){
+        textViewBarCodeValue.post(new Runnable() {
+            @Override
+            public void run() {
+                intentData = barCode.valueAt(0).displayValue;
+                textViewBarCodeValue.setText(intentData);
+                copyToClipBoard(intentData);
             }
         });
     }
@@ -127,5 +125,17 @@ public class ScannerBarcodeActivity extends AppCompatActivity {
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         ClipData clip = ClipData.newPlainText("QR code Scanner", text);
         clipboard.setPrimaryClip(clip);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(requestCode == REQUEST_CAMERA_PERMISSION && grantResults.length>0){
+            if (grantResults[0] == PackageManager.PERMISSION_DENIED)
+                finish();
+            else
+                openCamera();
+        }else
+            finish();
     }
 }
